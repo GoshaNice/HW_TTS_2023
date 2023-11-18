@@ -1,4 +1,3 @@
-from src.loss.CTCLossWrapper import CTCLossWrapper as CTCLoss
-from src.loss.SpExLoss import SpExLoss
+from src.loss.FSLoss import FastSpeech2Loss
 
-__all__ = ["CTCLoss", "SpExLoss"]
+__all__ = ["FastSpeech2Loss"]

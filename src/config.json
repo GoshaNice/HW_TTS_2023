@@ -1,81 +1,90 @@
 {
   "name": "DS2_with_augmentations",
-  "n_gpu": 1,
+  "n_gpu": 0,
   "preprocessing": {
-      "sr": 16000,
+      "sr": 22050,
       "spectrogram": {
           "type": "MelSpectrogram",
-          "args": {}
+          "args": {
+            "nfft": 1024,
+            "hop_size": 256
+          }
       },
-      "log_spec": true
+      "log_spec": false
   },
   "augmentations": {
-      "wave": [
-          {
-              "type": "RandomGaussianNoise",
-              "args": {
-                  "p": 0.1
-              }
-          },
-          {
-              "type": "RandomGain",
-              "args": {
-                  "p": 0.1
-              }
-          }
-      ],
-      "spectrogram": [
-          {
-              "type": "RandomFrequencyMasking",
-              "args": {
-                  "p": 0.2,
-                  "freq_mask_param": 10
-              }
-          },
-          {
-              "type": "RandomTimeMasking",
-              "args": {
-                  "p": 0.2,
-                  "time_mask_param": 70
-              }
-          }
-      ]
+      "wave": [],
+      "spectrogram": []
   },
   "arch": {
-      "type": "DeepSpeech2",
+      "type": "FastSpeech2",
       "args": {
-          "input_dim": 128,
-          "fc_hidden": 1600,
-          "gru_hidden": 800
+        "model_config": {
+            "vocab_size" : 1000,
+            "max_seq_len" : 3000,
+            "encoder_dim" : 256,
+            "encoder_n_layer" : 4,
+            "encoder_head" : 2,
+            "encoder_conv1d_filter_size" : 1024,
+            "decoder_dim" : 256,
+            "decoder_n_layer" : 4,
+            "decoder_head" : 2,
+            "decoder_conv1d_filter_size" : 1024,
+
+            "fft_conv1d_kernel" : [9, 1],
+            "fft_conv1d_padding" : [4, 0],
+
+            "duration_predictor_filter_size" : 256,
+            "duration_predictor_kernel_size" : 3,
+            "dropout" : 0.1,
+            
+            "PAD" : 0,
+            "UNK" : 1,
+            "BOS" : 2,
+            "EOS" : 3,
+
+            "PAD_WORD" : "<blank>",
+            "UNK_WORD" : "<unk>",
+            "BOS_WORD" : "<s>",
+            "EOS_WORD" : "</s>",
+            "phoneme_embed_dim": 256,
+            "encoder": {
+                "max_seq_len": 256,
+                "layers": 4,
+                "hidden": 256,
+                "kernel": 9,
+                "filter_size": 1024,
+                "heads": 2,
+                "dropout": 0.1
+            },
+            "decoder": {
+                "layers": 4,
+                "hidden": 256,
+                "kernel": 9,
+                "filter_size": 1024,
+                "heads": 2,
+                "dropout": 0.1
+            },
+            "variance_adaptor": {
+                "input_channels": 256,
+                "kernel_size": 3,
+                "dropout": 0.5
+            }
+        }
       }
   },
   "data": {
       "train": {
-          "batch_size": 32,
+          "batch_size": 48,
           "num_workers": 5,
           "datasets": [
               {
-                  "type": "LibrispeechDataset",
+                  "type": "LJspeechDataset",
                   "args": {
-                      "part": "train-clean-100",
+                      "part": "train",
                       "max_audio_length": 20.0,
-                      "max_text_length": 200
-                  }
-              },
-              {
-                  "type": "LibrispeechDataset",
-                  "args": {
-                      "part": "train-clean-360",
-                      "max_audio_length": 20.0,
-                      "max_text_length": 200
-                  }
-              },
-              {
-                  "type": "LibrispeechDataset",
-                  "args": {
-                      "part": "train-other-500",
-                      "max_audio_length": 20.0,
-                      "max_text_length": 200
+                      "max_text_length": 200,
+                      "batch_expand_size": 48
                   }
               }
           ]
@@ -84,83 +93,52 @@
           "batch_size": 32,
           "num_workers": 5,
           "datasets": [
-              {
-                  "type": "LibrispeechDataset",
-                  "args": {
-                      "part": "dev-clean"
-                  }
-              }
-          ]
-      },
-      "test-other": {
-          "batch_size": 32,
-          "num_workers": 5,
-          "datasets": [
-              {
-                  "type": "LibrispeechDataset",
-                  "args": {
-                      "part": "test-other"
-                  }
-              }
-          ]
-      },
-      "test-clean": {
-          "batch_size": 32,
-          "num_workers": 5,
-          "datasets": [
-              {
-                  "type": "LibrispeechDataset",
-                  "args": {
-                      "part": "test-clean"
-                  }
-              }
+            {
+                "type": "LJspeechDataset",
+                "args": {
+                    "part": "test",
+                    "max_audio_length": 20.0,
+                    "max_text_length": 200,
+                    "limit": 32
+                }
+            }
           ]
       }
   },
   "optimizer": {
-      "type": "Adam",
+      "type": "ScheduledOptim",
       "args": {
-          "lr": 0.0003
+          "betas": [0.9, 0.98],
+          "eps": 1e-9
       }
   },
   "loss": {
-      "type": "CTCLoss",
+      "type": "FastSpeech2Loss",
       "args": {}
   },
   "metrics": [
-      {
-          "type": "ArgmaxWERMetric",
-          "args": {
-              "name": "WER (argmax)"
-          }
-      },
-      {
-          "type": "ArgmaxCERMetric",
-          "args": {
-              "name": "CER (argmax)"
-          }
-      }
+      {}
   ],
   "lr_scheduler": {
-      "type": "OneCycleLR",
-      "args": {
-          "steps_per_epoch": 100,
-          "epochs": 200,
-          "anneal_strategy": "cos",
-          "max_lr": 0.0003,
-          "pct_start": 0.2
-      }
+    "type": "OneCycleLR",
+    "args": {
+      "steps_per_epoch": 100,
+      "epochs": 50,
+      "anneal_strategy": "cos",
+      "max_lr": 1e-2,
+      "pct_start": 0.2
+    }
   },
   "trainer": {
-      "epochs": 200,
+      "epochs": 160,
       "save_dir": "saved/",
-      "save_period": 5,
+      "save_period": 10,
       "verbosity": 2,
-      "monitor": "min val_loss",
-      "early_stop": 200,
+      "monitor": "min train_loss",
+      "early_stop": 160,
       "visualize": "wandb",
-      "wandb_project": "ss_project",
-      "len_epoch": 100,
+      "wandb_project": "tts_project",
+      "len_epoch": 1000,
       "grad_norm_clip": 10
   }
 }

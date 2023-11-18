@@ -1,9 +1,4 @@
-from src.model.baseline_model import BaselineModel
-from src.model.deepspeech2_model import DeepSpeech2
-from src.model.SpEx import SpExPlus
+from src.model.FastSpeech2 import FastSpeech2
+from src.model.optimizer import ScheduledOptim
 
-__all__ = [
-    "BaselineModel",
-    "DeepSpeech2",
-    "SpExPlus",
-]
+__all__ = ["FastSpeech2", "ScheduledOptim"]

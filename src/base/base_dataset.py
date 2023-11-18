@@ -7,8 +7,7 @@ import torch
 import torchaudio
 from torch import Tensor
 from torch.utils.data import Dataset
-
-from src.base.base_text_encoder import BaseTextEncoder
+from src.text import text_to_sequence
 from src.utils.parse_config import ConfigParser
 
 logger = logging.getLogger(__name__)
@@ -19,17 +18,23 @@ class BaseDataset(Dataset):
         self,
         index,
         config_parser: ConfigParser,
+        batch_expand_size: int = 32,
         wave_augs=None,
         spec_augs=None,
         limit=None,
         max_audio_length=None,
+        max_text_length=None,
     ):
         self.config_parser = config_parser
         self.wave_augs = wave_augs
         self.spec_augs = spec_augs
+        self.log_spec = config_parser["preprocessing"]["log_spec"]
+        self.batch_expand_size = batch_expand_size
 
         self._assert_index_is_valid(index)
-        index = self._filter_records_from_dataset(index, max_audio_length, limit)
+        index = self._filter_records_from_dataset(
+            index, max_audio_length, max_text_length, limit
+        )
         # it's a good idea to sort index by audio length
         # It would be easier to write length-based batch samplers later
         index = self._sort_index(index)
@@ -37,25 +42,25 @@ class BaseDataset(Dataset):
 
     def __getitem__(self, ind):
         data_dict = self._index[ind]
-        mix_path = data_dict["mix"]
-        mix = self.load_audio(mix_path)
-        ref_path = data_dict["ref"]
-        ref = self.load_audio(ref_path)
-        target_path = data_dict["target"]
-        target = self.load_audio(target_path)
+        mel_spec = torch.from_numpy(np.load(data_dict["mel_path"]))
+        duration = torch.from_numpy(np.load(data_dict["aligment_path"]))
+        pitch = torch.from_numpy(np.load(data_dict["pitch_path"]))
+        energy = torch.from_numpy(np.load(data_dict["energy_path"]))
+        text = data_dict["text"].strip()
+        character = np.array(text_to_sequence(text, ["english_cleaners"]))
+
         return {
-            "mix": mix,
-            "mix_length": data_dict["mix_length"],
-            "ref": ref,
-            "ref_length": data_dict["ref_length"],
-            "target": target,
-            "target_length": data_dict["target_length"],
-            "target_id": data_dict["target_id"],
+            "mel_target": mel_spec,
+            "duration": duration,
+            "text": torch.from_numpy(character),
+            "pitch": pitch,
+            "energy": energy,
+            "batch_expand_size": self.batch_expand_size,
         }
 
     @staticmethod
     def _sort_index(index):
-        return sorted(index, key=lambda x: x["mix_length"])
+        return sorted(index, key=lambda x: x["audio_len"])
 
     def __len__(self):
         return len(self._index)
@@ -79,14 +84,18 @@ class BaseDataset(Dataset):
             audio_tensor_spec = wave2spec(audio_tensor_wave)
             if self.spec_augs is not None:
                 audio_tensor_spec = self.spec_augs(audio_tensor_spec)
+            if self.log_spec:
+                audio_tensor_spec = torch.log(audio_tensor_spec + 1e-5)
             return audio_tensor_wave, audio_tensor_spec
 
     @staticmethod
-    def _filter_records_from_dataset(index: list, max_audio_length, limit=None) -> list:
+    def _filter_records_from_dataset(
+        index: list, max_audio_length, max_text_length, limit
+    ) -> list:
         initial_size = len(index)
         if max_audio_length is not None:
             exceeds_audio_length = (
-                np.array([el["mix_length"] for el in index]) >= max_audio_length
+                np.array([el["audio_len"] for el in index]) >= max_audio_length
             )
             _total = exceeds_audio_length.sum()
             logger.info(
@@ -96,6 +105,7 @@ class BaseDataset(Dataset):
         else:
             exceeds_audio_length = False
 
+        initial_size = len(index)
         records_to_filter = exceeds_audio_length
 
         if records_to_filter is not False and records_to_filter.any():
@@ -114,7 +124,7 @@ class BaseDataset(Dataset):
     @staticmethod
     def _assert_index_is_valid(index):
         for entry in index:
-            assert "ref" in entry, (
-                "Each dataset item should include field 'ref'"
-                " - duration of audio (in seconds)."
-            )  # TODO
+            assert "text" in entry, (
+                "Each dataset item should include field 'text'"
+                " - text transcription of the audio."
+            )

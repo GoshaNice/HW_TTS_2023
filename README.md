@@ -1,7 +1,7 @@
-# SS HW1
+# TTS HW1
 #### Implemented by: Pistsov Georgiy 202
 
-You can find report here: [wandb report](https://wandb.ai/goshanice/ss_project/reports/-DLA-SS-Homework--Vmlldzo1OTQ4MTQz?accessToken=724noxivesjdk0w1rkq4ad9e9pbeby2hsytbnerniy4277j3lpfkkal3asjhkkt7)
+You can find report here: [wandb report](https://wandb.ai/goshanice/ss_project/reports/-DLA-TTS-Homework--Vmlldzo1OTQ4MTQz?accessToken=724noxivesjdk0w1rkq4ad9e9pbeby2hsytbnerniy4277j3lpfkkal3asjhkkt7)
 
 ## Installation guide
 
