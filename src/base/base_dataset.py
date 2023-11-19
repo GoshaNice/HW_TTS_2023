@@ -48,11 +48,12 @@ class BaseDataset(Dataset):
         energy = torch.from_numpy(np.load(data_dict["energy_path"]))
         text = data_dict["text"].strip()
         character = np.array(text_to_sequence(text, ["english_cleaners"]))
+        character = torch.from_numpy(character)
 
         return {
             "mel_target": mel_spec,
             "duration": duration,
-            "text": torch.from_numpy(character),
+            "text": character,
             "pitch": pitch,
             "energy": energy,
             "batch_expand_size": self.batch_expand_size,

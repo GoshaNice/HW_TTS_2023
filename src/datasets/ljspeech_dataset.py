@@ -104,7 +104,7 @@ class LJspeechDataset(BaseDataset):
 
             frame_period = (audio.shape[0] / sr * 1000) / mel.shape[0]
             _f0, t = pw.dio(audio, sr, frame_period=frame_period)
-            f0 = pw.stonemask(audio, _f0, t, sr)[:mel.shape[0]]
+            f0 = pw.stonemask(audio, _f0, t, sr)[:mel.shape[0]].astype(np.float32)
             pitch_name = f"ljspeech-pitch-{(i+1):05d}.npy"
             np.save(pitch_dir / pitch_name, f0)
 

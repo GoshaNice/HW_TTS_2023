@@ -24,8 +24,6 @@ class FastSpeech2Loss(nn.Module):
         **kwargs,
     ):
         log_duration_targets = torch.log(duration_target.float() + 1e-8)
-        print(mel_predictions.shape)
-        print(mel_target.shape)
         mel_loss = self.mae_loss(mel_predictions, mel_target)
 
         pitch_loss = self.mse_loss(pitch_predictions, pitch_target)
