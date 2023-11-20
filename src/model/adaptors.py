@@ -14,7 +14,7 @@ def create_alignment(base_mat, duration_predictor_output):
                 base_mat[i][count+k][j] = 1
             count = count + duration_predictor_output[i][j]
     return base_mat
-
+"""
 def pad(input_ele, mel_max_length=None):  # TODO change code
     if mel_max_length:
         max_len = mel_max_length
@@ -34,7 +34,7 @@ def pad(input_ele, mel_max_length=None):  # TODO change code
         out_list.append(one_batch_padded)
     out_padded = torch.stack(out_list)
     return out_padded
-
+"""
 
 class VariancePredictor(nn.Module):
     """
@@ -81,11 +81,7 @@ class VariancePredictor(nn.Module):
         x = self.block_2(x)
         x = self.linear(x)
         x = self.relu(x)
-
         x = x.squeeze()
-        
-        if not self.training:
-            x = x.unsqueeze(0)
         return x
 
 
@@ -119,23 +115,17 @@ class LengthRegulator(nn.Module):
                 output, (0, 0, 0, mel_max_length-output.size(1), 0, 0))
         return output
 
-    def forward(self, x, target=None, mel_max_length=None, alpha=1.0):
-        duration_predictor_output = self.duration_predictor(x)
+    def forward(self, x, target=None, mel_max_length=None, duration_control=1.0):
+        log_duration_prediction = self.duration_predictor(x)
 
         if target is not None:
             output = self.LR(x, target, mel_max_length)
-            return output, duration_predictor_output
         else:
-            # we remove 1 from exp because we estimate (target + 1), also we ensure that min is 0
-            duration_predictor_output = (((torch.exp(duration_predictor_output) - 1) * alpha) + 0.5).int()
-            duration_predictor_output[duration_predictor_output < 0] = 0
+            duration_prediction = ((torch.exp(log_duration_prediction) - 1) * duration_control).int()
+            duration_prediction[duration_prediction < 0] = 0
+            output = self.LR(x, duration_prediction)
 
-            output = self.LR(x, duration_predictor_output)
-            mel_pos = torch.stack(
-                [torch.Tensor([i+1  for i in range(output.size(1))])]
-            ).long().to(x.device)
-            return output, mel_pos
-
+        return output, log_duration_prediction
 
 class VarianceAdaptor(nn.Module):
     def __init__(
@@ -147,8 +137,8 @@ class VarianceAdaptor(nn.Module):
         n_bins: int = 256,
         encoder_hidden: int = 256,
         pitch_min: float = 60.0,
-        pitch_max: float = 455.0,
-        energy_min: float = 0.0,
+        pitch_max: float = 600.0,
+        energy_min: float = 10,
         energy_max: float = 150.0,
     ):
         super(VarianceAdaptor, self).__init__()
@@ -202,7 +192,8 @@ class VarianceAdaptor(nn.Module):
         pitch_control=1.0,
         energy_control=1.0,
     ):
-        x, duration_prediction = self.length_regulator(x, target=duration_target, mel_max_length=mel_max_length, alpha=duration_control)
+        x, log_duration_prediction = self.length_regulator(x, target=duration_target, mel_max_length=mel_max_length, duration_control=duration_control)
+        mel_pos = torch.arange(1, x.shape[1] + 1, dtype=torch.int64, device = x.device).unsqueeze(0).repeat(x.shape[0], 1)
         pitch_prediction = self.pitch_predictor(x, None)
         energy_prediction = self.energy_predictor(x, None)
         if pitch_target is None:
@@ -227,4 +218,4 @@ class VarianceAdaptor(nn.Module):
 
         x = x + pitch_embedding
         x = x + energy_embedding
-        return x, pitch_prediction, energy_prediction, duration_prediction
+        return x, pitch_prediction, energy_prediction, log_duration_prediction, mel_pos

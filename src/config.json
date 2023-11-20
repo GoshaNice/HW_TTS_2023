@@ -79,7 +79,7 @@
                     "part": "test",
                     "max_audio_length": 20.0,
                     "max_text_length": 200,
-                    "limit": 300
+                    "limit": 640
                 }
             }
           ]
@@ -88,6 +88,7 @@
   "optimizer": {
       "type": "ScheduledOptim",
       "args": {
+          "n_warmup_steps": 20000,
           "betas": [0.9, 0.98],
           "eps": 1e-9
       }
@@ -110,7 +111,7 @@
     }
   },
   "trainer": {
-      "epochs": 160,
+      "epochs": 200,
       "save_dir": "saved/",
       "save_period": 10,
       "verbosity": 2,

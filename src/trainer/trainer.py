@@ -58,10 +58,10 @@ class Trainer(BaseTrainer):
         self.log_step = 50
 
         self.train_metrics = MetricTracker(
-            "loss", "grad norm", *[m.name for m in self.metrics], writer=self.writer
+            "loss", "mel_loss", "pitch_loss", "energy_loss", "duration_loss", "grad norm", *[m.name for m in self.metrics], writer=self.writer
         )
         self.evaluation_metrics = MetricTracker(
-            "loss", *[m.name for m in self.metrics], writer=self.writer
+            *[m.name for m in self.metrics], writer=self.writer
         )
         self.device = device
 
@@ -151,15 +151,19 @@ class Trainer(BaseTrainer):
         else:
             batch["logits"] = outputs
 
-        batch["loss"], mel_loss, pitch_loss, energy_loss, duration_loss = self.criterion(**batch)
         if is_train:
+            batch["loss"], batch["mel_loss"], batch["pitch_loss"], batch["energy_loss"], batch["duration_loss"] = self.criterion(**batch)
+            metrics.update("loss", batch["loss"].item())
+            metrics.update("mel_loss", batch["mel_loss"].item())
+            metrics.update("pitch_loss", batch["pitch_loss"].item())
+            metrics.update("energy_loss", batch["energy_loss"].item())
+            metrics.update("duration_loss", batch["duration_loss"].item())
             batch["loss"].backward()
             self._clip_grad_norm()
             self.optimizer.step_and_update_lr()
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
-        metrics.update("loss", batch["loss"].item())
         for met in self.metrics:
             metrics.update(met.name, met(**batch))
         return batch
