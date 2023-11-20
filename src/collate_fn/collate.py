@@ -8,21 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 def collate_fn(dataset_items: List[dict]):
-    """
-    Collate and pad fields in dataset items
-    """
-    """
-    batch_expand_size = dataset_items[0]["batch_expand_size"]
-    len_arr = np.array([d["text"].size(0) for d in dataset_items])
-    index_arr = np.argsort(-len_arr)
-    batchsize = len(dataset_items)
-    real_batchsize = batchsize // batch_expand_size
-
-    cut_list = list()
-    for i in range(batch_expand_size):
-        cut_list.append(index_arr[i * real_batchsize : (i + 1) * real_batchsize])
-
-    reprocess_tensor(dataset_items)"""
     len_arr = np.array([d["text"].size(0) for d in dataset_items])
     cut_list = np.argsort(-len_arr)
     return reprocess_tensor(dataset_items, cut_list=cut_list)
@@ -39,8 +24,14 @@ def reprocess_tensor(batch, cut_list):
     for text in texts:
         length_text = np.append(length_text, text.size(0))
 
+    length_duration = np.array([])
+    for duration in durations:
+        length_duration = np.append(length_duration, duration.size(0))
+
     src_pos = list()
     max_len = int(max(length_text))
+    max_len_duration = int(max(length_duration))
+    max_len = max(max_len, max_len_duration)
     for length_src_row in length_text:
         src_pos.append(
             np.pad(
@@ -68,10 +59,11 @@ def reprocess_tensor(batch, cut_list):
     mel_pos = torch.from_numpy(np.array(mel_pos))
 
     src_seq = pad_1D_tensor(texts)
-    durations = pad_1D_tensor(durations)
+    durations = pad_1D_tensor(durations, max_pad_len=max_len)
     pitches = pad_1D_tensor(pitches)
     energies = pad_1D_tensor(energies)
     mel_targets = pad_2D_tensor(mel_targets)
+    src_seq = pad_1D_tensor(texts, max_pad_len=max_len)
 
     out = {
         "src_seq": src_seq,
@@ -87,12 +79,14 @@ def reprocess_tensor(batch, cut_list):
     return out
 
 
-def pad_1D_tensor(inputs, PAD=0):
+def pad_1D_tensor(inputs, PAD=0, max_pad_len=None):
     def pad_data(x, length, PAD):
         x_padded = F.pad(x, (0, length - x.shape[0]))
         return x_padded
 
     max_len = max((len(x) for x in inputs))
+    if max_pad_len:
+        max_len = max(max_len, max_pad_len)
     padded = torch.stack([pad_data(x, max_len, PAD) for x in inputs])
 
     return padded

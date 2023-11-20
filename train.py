@@ -4,6 +4,7 @@ import warnings
 import os
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+os.environ["TORCH_USE_CUDA_DSA"] = "1"
 warnings.filterwarnings("ignore")
 
 import numpy as np

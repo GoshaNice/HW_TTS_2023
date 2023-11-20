@@ -15,14 +15,15 @@ class ScaledDotProductAttention(nn.Module):
         self.softmax = nn.Softmax(dim=2)
 
     def forward(self, query, key, value, mask=None):
-        matmul = torch.matmul(query, key.transpose(-1, -2))
-        depth = key.shape[-1]
-        scaling = float(depth) ** (-0.5) / self.temperature
-        matmul *= scaling
+        attention = torch.matmul(query, key.transpose(-1, -2))
+        scaling = 1 / self.temperature
+        attention *= scaling
 
-        attention = self.softmax(matmul)
         if mask is not None:
-            attention = attention.masked_fill(mask, -np.inf)
+            attention = attention.masked_fill(mask, -torch.inf)
+            
+        attention = self.softmax(attention)
+        attention = self.softmax(attention)
 
         res = torch.matmul(attention, value)
         return res, attention

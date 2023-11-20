@@ -1,6 +1,6 @@
 {
   "name": "DS2_with_augmentations",
-  "n_gpu": 0,
+  "n_gpu": 1,
   "preprocessing": {
       "sr": 22050,
       "spectrogram": {
@@ -30,46 +30,26 @@
             "decoder_n_layer" : 4,
             "decoder_head" : 2,
             "decoder_conv1d_filter_size" : 1024,
-
             "fft_conv1d_kernel" : [9, 1],
             "fft_conv1d_padding" : [4, 0],
-
             "duration_predictor_filter_size" : 256,
             "duration_predictor_kernel_size" : 3,
             "dropout" : 0.1,
-            
             "PAD" : 0,
             "UNK" : 1,
             "BOS" : 2,
             "EOS" : 3,
-
             "PAD_WORD" : "<blank>",
             "UNK_WORD" : "<unk>",
             "BOS_WORD" : "<s>",
             "EOS_WORD" : "</s>",
             "phoneme_embed_dim": 256,
-            "encoder": {
-                "max_seq_len": 256,
-                "layers": 4,
-                "hidden": 256,
-                "kernel": 9,
-                "filter_size": 1024,
-                "heads": 2,
-                "dropout": 0.1
-            },
-            "decoder": {
-                "layers": 4,
-                "hidden": 256,
-                "kernel": 9,
-                "filter_size": 1024,
-                "heads": 2,
-                "dropout": 0.1
-            },
             "variance_adaptor": {
                 "input_channels": 256,
                 "kernel_size": 3,
-                "dropout": 0.5
-            }
+                "dropout": 0.1
+            },
+            "num_mels": 80
         }
       }
   },
@@ -99,7 +79,7 @@
                     "part": "test",
                     "max_audio_length": 20.0,
                     "max_text_length": 200,
-                    "limit": 32
+                    "limit": 300
                 }
             }
           ]

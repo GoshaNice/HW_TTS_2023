@@ -72,30 +72,38 @@ class VariancePredictor(nn.Module):
             nn.Dropout(dropout),
         )
         self.linear = nn.Linear(output_channels, 1)
+        self.relu = nn.ReLU()
 
-    def forward(self, x):  # x - (B, T, C)
+    def forward(self, x, mask=None):  # x - (B, T, C)
         x = self.conv_1(x.transpose(1, 2)).transpose(1, 2) # (B, T, C)
         x = self.block_1(x)
         x = self.conv_2(x.transpose(1, 2)).transpose(1, 2)
         x = self.block_2(x)
         x = self.linear(x)
-        return x.squeeze(-1)
+        x = self.relu(x)
+
+        x = x.squeeze()
+        
+        if not self.training:
+            x = x.unsqueeze(0)
+        return x
 
 
 class LengthRegulator(nn.Module):
     """ Length Regulator """
 
     def __init__(self, 
-                 input_channels: int = 256,
-                output_channels: int = 256,
-                kernel_size: int = 3,
-                dropout: float = 0):
+        input_channels: int = 256,
+        output_channels: int = 256,
+        kernel_size: int = 3,
+        dropout: float = 0,
+        ):
         super(LengthRegulator, self).__init__()
-        self.duration_predictor = VariancePredictor(
-            input_channels=input_channels,
-            output_channels=output_channels,
-            kernel_size=kernel_size,
-            dropout=dropout)
+        self.duration_predictor = VariancePredictor(input_channels, 
+            output_channels,
+            kernel_size,
+            dropout
+        )
 
     def LR(self, x, duration_predictor_output, mel_max_length=None):
         expand_max_len = torch.max(torch.sum(duration_predictor_output, -1), -1)[0]
@@ -194,18 +202,9 @@ class VarianceAdaptor(nn.Module):
         pitch_control=1.0,
         energy_control=1.0,
     ):
-        log_duration_prediction = self.duration_predictor(x)
-        if duration_target is None:
-            duration_prediction = torch.round(
-                torch.exp(log_duration_prediction) * duration_control
-            )
-            x, mel_len = self.length_regulator(x, duration_prediction)
-        else:
-            x, mel_len = self.length_regulator(x, duration_target, mel_max_length, duration_control)
-
-
-        pitch_prediction = self.pitch_predictor(x)
-        energy_prediction = self.energy_predictor(x)
+        x, duration_prediction = self.length_regulator(x, target=duration_target, mel_max_length=mel_max_length, alpha=duration_control)
+        pitch_prediction = self.pitch_predictor(x, None)
+        energy_prediction = self.energy_predictor(x, None)
         if pitch_target is None:
             pitch_prediction = pitch_prediction * pitch_control
             pitch_embedding = self.pitch_embbeding(
@@ -228,6 +227,4 @@ class VarianceAdaptor(nn.Module):
 
         x = x + pitch_embedding
         x = x + energy_embedding
-
-
-        return x, pitch_prediction, energy_prediction, log_duration_prediction, mel_len
+        return x, pitch_prediction, energy_prediction, duration_prediction

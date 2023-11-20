@@ -111,3 +111,6 @@ wandb/
 .vscode/
 .idea/
 __MACOSX/
+
+waveglow/pretrained_model
+*.patch

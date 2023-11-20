@@ -14,7 +14,6 @@ import numpy as np
 import gdown
 import torch
 import pyworld as pw
-from scipy.interpolate import interp1d
 import librosa
 
 logger = logging.getLogger(__name__)
@@ -39,9 +38,9 @@ class LJspeechDataset(BaseDataset):
     def _load_dataset(self):
         arch_path = self._data_dir / "LJSpeech-1.1.tar.bz2"
         print("Loading LJSpeech")
-        download_file(URL_LINKS["dataset"], arch_path)
+        #download_file(URL_LINKS["dataset"], arch_path)
         shutil.unpack_archive(arch_path, self._data_dir)
-        for fpath in (self._data_dir / "LJSpeech-1.1").iterdir():
+        for fpath in tqdm((self._data_dir / "LJSpeech-1.1").iterdir()):
             shutil.move(str(fpath), str(self._data_dir / fpath.name))
         os.remove(str(arch_path))
         shutil.rmtree(str(self._data_dir / "LJSpeech-1.1"))
@@ -50,11 +49,11 @@ class LJspeechDataset(BaseDataset):
         train_length = int(0.85 * len(files))  # hand split, test ~ 15%
         (self._data_dir / "train").mkdir(exist_ok=True, parents=True)
         (self._data_dir / "test").mkdir(exist_ok=True, parents=True)
-        for i, fpath in enumerate((self._data_dir / "wavs").iterdir()):
+        for i, fpath in tqdm(enumerate((self._data_dir / "wavs").iterdir())):
             if i < train_length:
-                shutil.move(str(fpath), str(self._data_dir / "train" / fpath.name))
+                shutil.copy(str(fpath), str(self._data_dir / "train" / fpath.name))
             else:
-                shutil.move(str(fpath), str(self._data_dir / "test" / fpath.name))
+                shutil.copy(str(fpath), str(self._data_dir / "test" / fpath.name))
         #shutil.rmtree(str(self._data_dir / "wavs"))
 
     def _get_or_load_index(self, part):
@@ -69,21 +68,24 @@ class LJspeechDataset(BaseDataset):
         return index
     
     def _load_mel(self):
+        print("Loading Mel")
         output = self._data_dir / "mel.tar.gz"
-        gdown.download(URL_LINKS["mels"], output, quiet=False)
-        shutil.unpack_archive(output, self._data_dir / "mels")
+        gdown.download(URL_LINKS["mels"], str(output), quiet=False)
+        shutil.unpack_archive(output, self._data_dir)
         os.remove(str(output))
     
     def _load_aligments(self):
+        print("Loading Alignments")
         arch_path = self._data_dir / "alignments.zip"
         download_file(URL_LINKS["alignments"], arch_path)
-        shutil.unpack_archive(arch_path, self._data_dir / "alignments")
+        shutil.unpack_archive(arch_path, self._data_dir)
         os.remove(str(arch_path))
     
     def _count_energy(self):
+        print("Counting Energy")
         energy_dir = self._data_dir / "energy"
         mel_dir = self._data_dir / "mels"
-        energy.mkdir(exist_ok=True, parents=True)
+        energy_dir.mkdir(exist_ok=True, parents=True)
 
         for mel_path in mel_dir.iterdir():
             mel = np.load(mel_path)
@@ -92,6 +94,7 @@ class LJspeechDataset(BaseDataset):
             np.save(energy_dir / energy_name, energy)
     
     def _count_pitch(self):
+        print("Counting Pitch")
         wav_dir = self._data_dir / "wavs"
         mel_dir = self._data_dir / "mels"
         pitch_dir = self._data_dir / "pitch"

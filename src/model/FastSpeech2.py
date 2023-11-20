@@ -17,8 +17,8 @@ class FastSpeech2(nn.Module):
         self.variance_adaptor = VarianceAdaptor(**model_config["variance_adaptor"])
         self.decoder = Decoder(model_config)
         self.mel_linear = nn.Linear(
-            model_config["decoder"]["hidden"],
-            80,
+            model_config["decoder_dim"],
+            model_config["num_mels"],
         )
 
     def forward(
@@ -35,7 +35,7 @@ class FastSpeech2(nn.Module):
         duration_control=1.0,
         **kwargs
     ):
-        x, non_pad_mask = self.encoder(src_seq, src_pos)
+        x, mask = self.encoder(src_seq, src_pos)
 
         output = self.variance_adaptor(
             x,
@@ -48,7 +48,7 @@ class FastSpeech2(nn.Module):
             energy_control=energy_control,
         )
 
-        x, pitch_prediction, energy_prediction, log_duration_prediction, mel_len = output
+        x, pitch_prediction, energy_prediction, log_duration_prediction = output
         output = self.decoder(x, mel_pos)
         output = self.mel_linear(output)
 

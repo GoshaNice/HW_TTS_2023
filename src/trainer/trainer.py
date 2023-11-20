@@ -10,12 +10,16 @@ import librosa
 from torch.nn.utils import clip_grad_norm_
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
+import torchaudio
 
 from src.base import BaseTrainer
 from src.base.base_text_encoder import BaseTextEncoder
 from src.logger.utils import plot_spectrogram_to_buf
 from src.metric.utils import calc_cer, calc_wer
 from src.utils import inf_loop, MetricTracker
+
+from waveglow.utils import get_WaveGlow
+import waveglow as waveglow
 
 
 class Trainer(BaseTrainer):
@@ -59,13 +63,17 @@ class Trainer(BaseTrainer):
         self.evaluation_metrics = MetricTracker(
             "loss", *[m.name for m in self.metrics], writer=self.writer
         )
+        self.device = device
+
+        self.waveglow = get_WaveGlow()
+        self.waveglow = self.waveglow.to(device)
 
     @staticmethod
     def move_batch_to_device(batch, device: torch.device):
         """
         Move all necessary tensors to the HPU
         """
-        for tensor_for_gpu in ["mel_target", "src_seq", "duration_target", "pitch_target", "energy_target"]:
+        for tensor_for_gpu in ["src_seq", "src_pos", "mel_target", "duration_target", "pitch_target", "energy_target", "mel_pos"]:
             batch[tensor_for_gpu] = batch[tensor_for_gpu].to(device)
         return batch
 
@@ -113,11 +121,11 @@ class Trainer(BaseTrainer):
                     )
                 )
                 self.writer.add_scalar(
-                    "learning rate", self.lr_scheduler.get_last_lr()[0]
+                    "learning rate", self.optimizer.get_last_lr()
                 )
-                self._log_predictions(**batch)
-                self._log_spectrogram(batch["spectrogram"])
-                self._log_audio(batch["spectrogram"])
+
+                #self._log_spectrogram(batch["mel_predictions"])
+                self._log_audio(batch["mel_predictions"])
                 self._log_scalars(self.train_metrics)
                 # we don't want to reset train metrics at the start of every epoch
                 # because we are interested in recent train metrics
@@ -147,7 +155,7 @@ class Trainer(BaseTrainer):
         if is_train:
             batch["loss"].backward()
             self._clip_grad_norm()
-            self.optimizer.step()
+            self.optimizer.step_and_update_lr()
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
@@ -178,13 +186,13 @@ class Trainer(BaseTrainer):
                 )
             self.writer.set_step(epoch * self.len_epoch, part)
             self._log_scalars(self.evaluation_metrics)
-            self._log_predictions(**batch)
-            self._log_spectrogram(batch["spectrogram"])
-            self._log_audio(batch["spectrogram"])
+            #self._log_spectrogram(batch["mel_predictions"])
+            self._log_audio(batch["mel_predictions"])
 
         # add histogram of model parameters to the tensorboard
+        """
         for name, p in self.model.named_parameters():
-            self.writer.add_histogram(name, p, bins="auto")
+            self.writer.add_histogram(name, p, bins="auto")"""
         return self.evaluation_metrics.result()
 
     def _progress(self, batch_idx):
@@ -197,55 +205,20 @@ class Trainer(BaseTrainer):
             total = self.len_epoch
         return base.format(current, total, 100.0 * current / total)
 
-    def _log_predictions(
-        self,
-        text,
-        log_probs,
-        log_probs_length,
-        audio_path,
-        examples_to_log=10,
-        *args,
-        **kwargs,
-    ):
-        # TODO: implement logging of beam search results
-        if self.writer is None:
-            return
-        argmax_inds = log_probs.cpu().argmax(-1).numpy()
-        argmax_inds = [
-            inds[: int(ind_len)]
-            for inds, ind_len in zip(argmax_inds, log_probs_length.numpy())
-        ]
-        argmax_texts_raw = [self.text_encoder.decode(inds) for inds in argmax_inds]
-        argmax_texts = [self.text_encoder.ctc_decode(inds) for inds in argmax_inds]
-        tuples = list(zip(argmax_texts, text, argmax_texts_raw, audio_path))
-        shuffle(tuples)
-        rows = {}
-        for pred, target, raw_pred, audio_path in tuples[:examples_to_log]:
-            target = BaseTextEncoder.normalize_text(target)
-            wer = calc_wer(target, pred) * 100
-            cer = calc_cer(target, pred) * 100
-
-            rows[Path(audio_path).name] = {
-                "target": target,
-                "raw prediction": raw_pred,
-                "predictions": pred,
-                "wer": wer,
-                "cer": cer,
-            }
-        self.writer.add_table(
-            "predictions", pd.DataFrame.from_dict(rows, orient="index")
-        )
-
     def _log_spectrogram(self, spectrogram_batch):
         spectrogram = random.choice(spectrogram_batch.cpu())
         image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram))
         self.writer.add_image("spectrogram", ToTensor()(image))
 
     def _log_audio(self, spectrogram_batch):
-        log_spectrogram = random.choice(spectrogram_batch.cpu())
-        melspec = (torch.exp(log_spectrogram)).detach().numpy()
-        audio = librosa.feature.inverse.mel_to_audio(melspec, sr=16000, n_fft=400)
-        self.writer.add_audio("audio", audio, sample_rate=16000)
+        melspec = random.choice(spectrogram_batch.cpu())
+        mel = melspec.unsqueeze(0).contiguous().transpose(1, 2).to(self.device)
+        waveglow.inference.inference(
+            mel, self.waveglow,
+            f"results/s={1}_{1}_waveglow.wav"
+        )
+        audio, sr = torchaudio.load(f"results/s={1}_{1}_waveglow.wav")
+        self.writer.add_audio("audio", audio, sample_rate=sr)
 
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):
