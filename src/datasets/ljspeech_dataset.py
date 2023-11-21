@@ -15,6 +15,7 @@ import gdown
 import torch
 import pyworld as pw
 import librosa
+from scipy import interpolate
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class LJspeechDataset(BaseDataset):
     def _load_dataset(self):
         arch_path = self._data_dir / "LJSpeech-1.1.tar.bz2"
         print("Loading LJSpeech")
-        #download_file(URL_LINKS["dataset"], arch_path)
+        download_file(URL_LINKS["dataset"], arch_path)
         shutil.unpack_archive(arch_path, self._data_dir)
         for fpath in tqdm((self._data_dir / "LJSpeech-1.1").iterdir()):
             shutil.move(str(fpath), str(self._data_dir / fpath.name))
@@ -108,6 +109,12 @@ class LJspeechDataset(BaseDataset):
             frame_period = (audio.shape[0] / sr * 1000) / mel.shape[0]
             _f0, t = pw.dio(audio, sr, frame_period=frame_period)
             f0 = pw.stonemask(audio, _f0, t, sr)[:mel.shape[0]].astype(np.float32)
+            
+            x = np.arange(f0.shape[0])[f0 != 0]
+            y = f0[f0 != 0]
+            below, above = f0[f0 != 0][0], f0[f0 != 0][-1]
+            transform = interpolate.interp1d(x, y, bounds_error=False, fill_value = (below, above))
+            f0 = transform(np.arange(f0.shape[0]))
             pitch_name = f"ljspeech-pitch-{(i+1):05d}.npy"
             np.save(pitch_dir / pitch_name, f0)
 
@@ -143,7 +150,7 @@ class LJspeechDataset(BaseDataset):
             with trans_path.open() as f:
                 for i, line in enumerate(f):
                     w_id = line.split("|")[0]
-                    w_text = line.split("|")[1].strip()
+                    w_text = line.split("|")[2].strip()
                     wav_path = wav_dir / f"{w_id}.wav"
                     if not wav_path.exists():  # elem in another part
                         continue

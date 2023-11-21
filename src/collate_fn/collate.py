@@ -24,14 +24,8 @@ def reprocess_tensor(batch, cut_list):
     for text in texts:
         length_text = np.append(length_text, text.size(0))
 
-    length_duration = np.array([])
-    for duration in durations:
-        length_duration = np.append(length_duration, duration.size(0))
-
     src_pos = list()
     max_len = int(max(length_text))
-    max_len_duration = int(max(length_duration))
-    max_len = max(max_len, max_len_duration)
     for length_src_row in length_text:
         src_pos.append(
             np.pad(

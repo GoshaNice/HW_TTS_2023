@@ -14,8 +14,8 @@ class FastSpeech2Loss(nn.Module):
     def forward(
         self,
         mel_predictions,
-        pitch_predictions,
-        energy_predictions,
+        log_pitch_predictions,
+        log_energy_predictions,
         log_duration_predictions,
         mel_target,
         pitch_target,
@@ -23,11 +23,13 @@ class FastSpeech2Loss(nn.Module):
         duration_target,
         **kwargs,
     ):
-        log_duration_targets = torch.log(duration_target.float() + 1)
         mel_loss = self.mae_loss(mel_predictions, mel_target)
+        log_duration_targets = torch.log(duration_target.float() + 1)
+        log_pitch_targets = torch.log(pitch_target.float() + 1)
+        log_energy_targets = torch.log(energy_target + 1)
 
-        pitch_loss = self.mse_loss(pitch_predictions, pitch_target)
-        energy_loss = self.mse_loss(energy_predictions, energy_target)
+        pitch_loss = self.mse_loss(log_pitch_predictions, log_pitch_targets)
+        energy_loss = self.mse_loss(log_energy_predictions, log_energy_targets)
         duration_loss = self.mse_loss(log_duration_predictions, log_duration_targets)
 
         total_loss = mel_loss + duration_loss + pitch_loss + energy_loss

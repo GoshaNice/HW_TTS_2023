@@ -11,7 +11,7 @@ class ScheduledOptim:
         weight_decay=0,
         n_warmup_steps=4000,
         current_step=1,
-        d_model=1024,
+        d_model=256,
     ):
         self._optimizer = torch.optim.Adam(
             model.parameters(),

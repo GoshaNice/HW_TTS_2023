@@ -17,6 +17,9 @@ from src.base.base_text_encoder import BaseTextEncoder
 from src.logger.utils import plot_spectrogram_to_buf
 from src.metric.utils import calc_cer, calc_wer
 from src.utils import inf_loop, MetricTracker
+from src.text import text_to_sequence
+
+import numpy as np
 
 from waveglow.utils import get_WaveGlow
 import waveglow as waveglow
@@ -190,13 +193,9 @@ class Trainer(BaseTrainer):
                 )
             self.writer.set_step(epoch * self.len_epoch, part)
             self._log_scalars(self.evaluation_metrics)
-            #self._log_spectrogram(batch["mel_predictions"])
             self._log_audio(batch["mel_predictions"])
+            self._log_test_synthesis()
 
-        # add histogram of model parameters to the tensorboard
-        """
-        for name, p in self.model.named_parameters():
-            self.writer.add_histogram(name, p, bins="auto")"""
         return self.evaluation_metrics.result()
 
     def _progress(self, batch_idx):
@@ -223,6 +222,26 @@ class Trainer(BaseTrainer):
         )
         audio, sr = torchaudio.load(f"results/s={1}_{1}_waveglow.wav")
         self.writer.add_audio("audio", audio, sample_rate=sr)
+    
+    def _log_test_synthesis(self):
+        texts = "A defibrillator is a device that gives a high energy electric shock to the heart of someone who is in cardiac arrest"
+        src_seq = torch.from_numpy(np.array(text_to_sequence(texts, ["english_cleaners"])))
+
+        src_pos = list()
+        src_pos.append(np.arange(1, int(src_seq.size(0)) + 1))
+        src_pos = torch.from_numpy(np.array(src_pos)).to(self.device)
+        src_seq = src_seq.unsqueeze(0).to(self.device)
+        
+        self.model.eval()
+        output = self.model(src_seq, src_pos)
+        melspec = output["mel_predictions"].squeeze()
+        mel = melspec.unsqueeze(0).contiguous().transpose(1, 2).to(self.device)
+        waveglow.inference.inference(
+            mel, self.waveglow,
+            f"results/s={1}_{1}_waveglow.wav"
+        )
+        audio, sr = torchaudio.load(f"results/s={1}_{1}_waveglow.wav")
+        self.writer.add_audio("test_audio", audio, sample_rate=sr)
 
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):

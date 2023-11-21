@@ -14,27 +14,7 @@ def create_alignment(base_mat, duration_predictor_output):
                 base_mat[i][count+k][j] = 1
             count = count + duration_predictor_output[i][j]
     return base_mat
-"""
-def pad(input_ele, mel_max_length=None):  # TODO change code
-    if mel_max_length:
-        max_len = mel_max_length
-    else:
-        max_len = max([input_ele[i].size(0) for i in range(len(input_ele))])
 
-    out_list = list()
-    for i, batch in enumerate(input_ele):
-        if len(batch.shape) == 1:
-            one_batch_padded = F.pad(
-                batch, (0, max_len - batch.size(0)), "constant", 0.0
-            )
-        elif len(batch.shape) == 2:
-            one_batch_padded = F.pad(
-                batch, (0, 0, 0, max_len - batch.size(0)), "constant", 0.0
-            )
-        out_list.append(one_batch_padded)
-    out_padded = torch.stack(out_list)
-    return out_padded
-"""
 
 class VariancePredictor(nn.Module):
     """
@@ -81,7 +61,7 @@ class VariancePredictor(nn.Module):
         x = self.block_2(x)
         x = self.linear(x)
         x = self.relu(x)
-        x = x.squeeze()
+        x = x.squeeze(-1)
         return x
 
 
@@ -166,15 +146,14 @@ class VarianceAdaptor(nn.Module):
             kernel_size=kernel_size,
             dropout=dropout,
         )
-
+        
+        # we switch to log prediction in pitch
         self.pitch_buckets = nn.Parameter(
-            torch.exp(torch.linspace(np.log(pitch_min), np.log(pitch_max), n_bins - 1)),
+            torch.linspace(np.log(pitch_min), np.log(pitch_max), n_bins),
             requires_grad=False,
         )
         self.energy_buckets = nn.Parameter(
-            torch.exp(
-                torch.linspace(np.log(energy_min), np.log(energy_max), n_bins - 1)
-            ),
+            torch.linspace(np.log(energy_min), np.log(energy_max), n_bins),
             requires_grad=False,
         )
 
@@ -194,28 +173,30 @@ class VarianceAdaptor(nn.Module):
     ):
         x, log_duration_prediction = self.length_regulator(x, target=duration_target, mel_max_length=mel_max_length, duration_control=duration_control)
         mel_pos = torch.arange(1, x.shape[1] + 1, dtype=torch.int64, device = x.device).unsqueeze(0).repeat(x.shape[0], 1)
-        pitch_prediction = self.pitch_predictor(x, None)
-        energy_prediction = self.energy_predictor(x, None)
+        log_pitch_prediction = self.pitch_predictor(x, None)
+        log_energy_prediction = self.energy_predictor(x, None)
         if pitch_target is None:
+            pitch_prediction = torch.exp(log_pitch_prediction) - 1
             pitch_prediction = pitch_prediction * pitch_control
             pitch_embedding = self.pitch_embbeding(
-                torch.bucketize(pitch_prediction, self.pitch_buckets)
+                torch.bucketize(torch.log(pitch_prediction + 1), self.pitch_buckets)
             )
         else:
             pitch_embedding = self.pitch_embbeding(
-                torch.bucketize(pitch_target, self.pitch_buckets)
+                torch.bucketize(torch.log(pitch_target + 1), self.pitch_buckets)
             )
 
         if energy_target is None:
+            energy_prediction = torch.exp(log_energy_prediction) - 1
             energy_prediction = energy_prediction * energy_control
             energy_embedding = self.energy_embbeding(
-                torch.bucketize(energy_prediction, self.energy_buckets)
+                torch.bucketize(torch.log(energy_prediction + 1), self.energy_buckets)
             )
         else:
             energy_embedding = self.energy_embbeding(
-                torch.bucketize(energy_target, self.energy_buckets)
+                torch.bucketize(torch.log(energy_target + 1), self.energy_buckets)
             )
 
         x = x + pitch_embedding
         x = x + energy_embedding
-        return x, pitch_prediction, energy_prediction, log_duration_prediction, mel_pos
+        return x, log_pitch_prediction, log_energy_prediction, log_duration_prediction, mel_pos

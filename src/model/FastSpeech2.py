@@ -61,7 +61,7 @@ class FastSpeech2(nn.Module):
                 pitch_control=pitch_control,
                 energy_control=energy_control,
             )
-            x, pitch_prediction, energy_prediction, log_duration_prediction, _ = output
+            x, log_pitch_prediction, log_energy_prediction, log_duration_prediction, _ = output
             output = self.decoder(x, mel_pos)
             output = self.mask_tensor(x, mel_pos, mel_max_length)
             output = self.mel_linear(output)
@@ -72,11 +72,11 @@ class FastSpeech2(nn.Module):
                 pitch_control=pitch_control,
                 energy_control=energy_control,
             )
-            x, pitch_prediction, energy_prediction, log_duration_prediction, mel_pos = output
+            x, log_pitch_prediction, log_energy_prediction, log_duration_prediction, mel_pos = output
             output = self.decoder(x, mel_pos)
             output = self.mel_linear(output)
 
         return {"mel_predictions": output, 
                 "log_duration_predictions": log_duration_prediction,
-                "pitch_predictions": pitch_prediction,
-                "energy_predictions": energy_prediction}
+                "log_pitch_predictions": log_pitch_prediction,
+                "log_energy_predictions": log_energy_prediction}

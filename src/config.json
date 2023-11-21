@@ -1,5 +1,5 @@
 {
-  "name": "DS2_with_augmentations",
+  "name": "FastSpeech2+Hope",
   "n_gpu": 1,
   "preprocessing": {
       "sr": 22050,
@@ -47,7 +47,11 @@
             "variance_adaptor": {
                 "input_channels": 256,
                 "kernel_size": 3,
-                "dropout": 0.1
+                "dropout": 0.1,
+                "pitch_min": 60,
+                "pitch_max": 880,
+                "energy_min": 15,
+                "energy_max": 95
             },
             "num_mels": 80
         }
@@ -88,7 +92,7 @@
   "optimizer": {
       "type": "ScheduledOptim",
       "args": {
-          "n_warmup_steps": 20000,
+          "n_warmup_steps": 4000,
           "betas": [0.9, 0.98],
           "eps": 1e-9
       }
