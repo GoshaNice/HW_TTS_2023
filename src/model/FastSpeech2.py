@@ -63,7 +63,7 @@ class FastSpeech2(nn.Module):
             )
             x, log_pitch_prediction, log_energy_prediction, log_duration_prediction, _ = output
             output = self.decoder(x, mel_pos)
-            output = self.mask_tensor(x, mel_pos, mel_max_length)
+            output = self.mask_tensor(output, mel_pos, mel_max_length)
             output = self.mel_linear(output)
         else:
             output = self.variance_adaptor(

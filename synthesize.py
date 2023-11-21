@@ -65,7 +65,6 @@ def main(config, out_file):
                                pitch_control = pitch_control,
                                energy_control = energy_control)
                 melspec = output["mel_predictions"].squeeze()
-                print(melspec)
                 mel = melspec.unsqueeze(0).contiguous().transpose(1, 2).to(device)
                 waveglow.inference.inference(
                     mel, vocoder,
