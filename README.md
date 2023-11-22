@@ -18,6 +18,11 @@ Then you run:
 make install
 ```
 
+## Download waveglow:
+
+```shell
+make download_waveglow
+```
 
 ## Download checkpoint:
 
@@ -34,12 +39,12 @@ make train
 Config for training you can find in src/config.json
 
 
-## Test model:
+## Synthesize something:
 
 ### On test-clean:
 
 ```shell
-make test_model
+make synthesize
 ```
 
 The file "output_test_clean.json" with results will be in the root on repository
@@ -53,27 +58,20 @@ For example:
 Instead of:
 
 ```shell
-python test.py -r default_test_model/model_best.pth
+python train.py -r default_test_model/model_best.pth
 ```
 
 You can use:
 
 ```shell
-poetry run python test.py -r default_test_model/model_best.pth
+poetry run python train.py -r default_test_model/model_best.pth
 ```
 
 ## How to train my model
 
 ```shell
-poetry run python test.py -c src/configs/config_SpexPlusChangeMixture.json
+poetry run python train.py -c src/config.json
 ```
-
-Then you will need to resume from latest checkpoint
-
-```shell
-poetry run python test.py -c src/configs/config_SpexPlusChangeMixturePost.json -r PATH/TO/CHECKPOINT
-```
-
 
 ## Credits
 

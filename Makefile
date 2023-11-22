@@ -22,11 +22,13 @@ format:
 download_checkpoint:
 	wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=FILEID' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1yhJX9IyXZ1L1SbFbhW0gwpipghsJwI9w" -O default_test_model/model_best.pth && rm -rf /tmp/cookies.txt
 
-test_model:
-	poetry run python test.py -r default_test_model/model_best.pth -o output_test_clean.json -b 1
+synthesize:
+	poetry run python sinthesize.py -r default_test_model/model_best.pth -i test_data_folder/input.txt
 
 train:
-	poetry run python train.py -c src/ss_config.json
+	poetry run python train.py -c src/config.json
 
 download_waveglow:
 	poetry run gdown https://drive.google.com/u/0/uc?id=1WsibBTsuRg_SF2Z6L6NFRTT-NjEy1oTx
+	mkdir -p waveglow/pretrained_model/
+	mv waveglow_256channels_ljs_v2.pt waveglow/pretrained_model/waveglow_256channels.pt
