@@ -3442,6 +3442,16 @@ files = [
 ]
 
 [[package]]
+name = "tgt"
+version = "1.4.4"
+description = "TextGridTools -- Read, write, and manipulate Praat TextGrid files"
+optional = false
+python-versions = "*"
+files = [
+    {file = "tgt-1.4.4.tar.gz", hash = "sha256:1473f3c2292f0b97d779b6f575df0d3394ded94f4bf62417bd5781b3889f7a62"},
+]
+
+[[package]]
 name = "threadpoolctl"
 version = "3.2.0"
 description = "threadpoolctl"
@@ -3996,4 +4006,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "44029c47ca93d2d6b985b2f6ef847cc148900ee32606b92999a66e1aae8bbabe"
+content-hash = "618c640a6dd01a6c0c6b831be182d55e3918faf68039e5678cc7d613ec1a4b5a"

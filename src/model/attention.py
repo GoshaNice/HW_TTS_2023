@@ -21,10 +21,8 @@ class ScaledDotProductAttention(nn.Module):
 
         if mask is not None:
             attention = attention.masked_fill(mask, -torch.inf)
-            
-        attention = self.softmax(attention)
-        attention = self.softmax(attention)
 
+        attention = self.softmax(attention)
         res = torch.matmul(attention, value)
         return res, attention
 

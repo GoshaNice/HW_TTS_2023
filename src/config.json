@@ -1,5 +1,5 @@
 {
-  "name": "FastSpeech2+Hope",
+  "name": "FastSpeech2+Hope+MFA",
   "n_gpu": 1,
   "preprocessing": {
       "sr": 22050,
@@ -118,11 +118,11 @@
     }
   },
   "trainer": {
-      "epochs": 200,
+      "epochs": 160,
       "save_dir": "saved/",
       "save_period": 10,
       "verbosity": 2,
-      "monitor": "min train_loss",
+      "monitor": "min loss_train",
       "early_stop": 160,
       "visualize": "wandb",
       "wandb_project": "tts_project",

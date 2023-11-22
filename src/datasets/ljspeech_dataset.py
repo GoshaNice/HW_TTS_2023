@@ -23,7 +23,7 @@ URL_LINKS = {
     "dataset": "https://data.keithito.com/data/speech/LJSpeech-1.1.tar.bz2",
     "mels": "https://drive.google.com/u/0/uc?id=1cJKJTmYd905a-9GFoo5gKjzhKjUVj83j",
     "alignments": "https://github.com/xcmyz/FastSpeech/raw/master/alignments.zip",
-    "mfa": "https://drive.google.com/u/0/uc?id=16tJW_myv6DEXmtaPDuj3hDU0rO61hE7A"
+    "mfa": "https://drive.google.com/drive/folders/1DBRkALpPd6FL9gjHMmMEdHODmkgNIIK4"
 }
 
 
@@ -78,10 +78,11 @@ class LJspeechDataset(BaseDataset):
 
     def _load_aligments(self):
         print("Loading Alignments")
-        arch_path = self._data_dir / "alignments.zip"
-        download_file(URL_LINKS["alignments"], arch_path)
-        shutil.unpack_archive(arch_path, self._data_dir)
-        os.remove(str(arch_path))
+        arch_path = self._data_dir
+        gdown.download_folder(url=URL_LINKS["mfa"], output=str(arch_path))
+        shutil.unpack_archive(arch_path / "LJSpeech.zip", self._data_dir)
+        mfa_path = arch_path / "TextGrid" / "LJSpeech"
+        mfa_path.rename(arch_path / "alignments")
 
     def _count_energy(self):
         print("Counting Energy")
@@ -166,7 +167,7 @@ class LJspeechDataset(BaseDataset):
                                 "text": w_text.lower(),
                                 "audio_len": length,
                                 "aligment_path": str(
-                                    self._data_dir / "alignments" / f"{i}.npy"
+                                    self._data_dir / "alignments" / f"{w_id}.TextGrid"
                                 ),
                                 "mel_path": str(
                                     self._data_dir

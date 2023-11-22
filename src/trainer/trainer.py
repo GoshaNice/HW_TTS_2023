@@ -242,7 +242,8 @@ class Trainer(BaseTrainer):
         self.writer.add_audio("audio", audio, sample_rate=sr)
 
     def _log_test_synthesis(self):
-        texts = "A defibrillator is a device that gives a high energy electric shock to the heart of someone who is in cardiac arrest"
+        # Printing, in the only sense with which we are at present concerned, differs from most if not from all the arts and crafts represented in the Exhibition
+        texts = "{" + "P R IH1 N T IH0 NG" + "} {" + " IH1 N DH IY0 OW1 N L IY0 S EH1 N S W IH1 DH" + "} {" + "W IH1 CH W IY1 AA1 R AE1 T P R EH1 Z AH0 N T K AH0 N S ER1 N D" + "} {" + "D IH1 F ER0 Z" + "} {" + "F R AH1 M M OW1 S T IH1 F N AA1 T F R AH1 M AO1 L DH IY0 AA1 R T S AH0 N D K R AE1 F T S R EH2 P R IH0 Z EH1 N T IH0 D IH1 N DH IY0 EH2 K S AH0 B IH1 SH AH0 N"+"}"
         src_seq = torch.from_numpy(
             np.array(text_to_sequence(texts, ["english_cleaners"]))
         )

@@ -43,6 +43,7 @@ inflect = "^7.0.0"
 pyworld = "^0.3.4"
 hparams = "^0.3.0"
 scipy = "^1.11.4"
+tgt = "^1.4.4"
 
 [tool.poetry.group.dev.dependencies]
 pyproject-flake8 = "^6.1.0"

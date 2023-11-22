@@ -8,6 +8,7 @@ import torchaudio
 from torch import Tensor
 from torch.utils.data import Dataset
 from src.text import text_to_sequence
+from src.utils.mfa_process import process_mfa
 from src.utils.parse_config import ConfigParser
 
 logger = logging.getLogger(__name__)
@@ -43,12 +44,9 @@ class BaseDataset(Dataset):
     def __getitem__(self, ind):
         data_dict = self._index[ind]
         mel_spec = torch.from_numpy(np.load(data_dict["mel_path"]))
-        duration = torch.from_numpy(np.load(data_dict["aligment_path"]))
+        character, duration = process_mfa(data_dict["aligment_path"])
         pitch = torch.from_numpy(np.load(data_dict["pitch_path"]))
         energy = torch.from_numpy(np.load(data_dict["energy_path"]))
-        text = data_dict["text"].strip()
-        character = np.array(text_to_sequence(text, ["english_cleaners"]))
-        character = torch.from_numpy(character)
 
         return {
             "mel_target": mel_spec,
