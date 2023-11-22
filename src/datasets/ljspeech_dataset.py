@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 URL_LINKS = {
     "dataset": "https://data.keithito.com/data/speech/LJSpeech-1.1.tar.bz2",
     "mels": "https://drive.google.com/u/0/uc?id=1cJKJTmYd905a-9GFoo5gKjzhKjUVj83j",
-    "alignments": "https://github.com/xcmyz/FastSpeech/raw/master/alignments.zip"
+    "alignments": "https://github.com/xcmyz/FastSpeech/raw/master/alignments.zip",
+    "mfa": "https://drive.google.com/u/0/uc?id=16tJW_myv6DEXmtaPDuj3hDU0rO61hE7A"
 }
 
 
@@ -55,7 +56,7 @@ class LJspeechDataset(BaseDataset):
                 shutil.copy(str(fpath), str(self._data_dir / "train" / fpath.name))
             else:
                 shutil.copy(str(fpath), str(self._data_dir / "test" / fpath.name))
-        #shutil.rmtree(str(self._data_dir / "wavs"))
+        # shutil.rmtree(str(self._data_dir / "wavs"))
 
     def _get_or_load_index(self, part):
         index_path = self._data_dir / f"{part}_index.json"
@@ -67,21 +68,21 @@ class LJspeechDataset(BaseDataset):
             with index_path.open("w") as f:
                 json.dump(index, f, indent=2)
         return index
-    
+
     def _load_mel(self):
         print("Loading Mel")
         output = self._data_dir / "mel.tar.gz"
         gdown.download(URL_LINKS["mels"], str(output), quiet=False)
         shutil.unpack_archive(output, self._data_dir)
         os.remove(str(output))
-    
+
     def _load_aligments(self):
         print("Loading Alignments")
         arch_path = self._data_dir / "alignments.zip"
         download_file(URL_LINKS["alignments"], arch_path)
         shutil.unpack_archive(arch_path, self._data_dir)
         os.remove(str(arch_path))
-    
+
     def _count_energy(self):
         print("Counting Energy")
         energy_dir = self._data_dir / "energy"
@@ -91,9 +92,9 @@ class LJspeechDataset(BaseDataset):
         for mel_path in mel_dir.iterdir():
             mel = np.load(mel_path)
             energy = np.linalg.norm(mel, axis=-1)
-            energy_name = mel_path.name.replace('mel', 'energy')
+            energy_name = mel_path.name.replace("mel", "energy")
             np.save(energy_dir / energy_name, energy)
-    
+
     def _count_pitch(self):
         print("Counting Pitch")
         wav_dir = self._data_dir / "wavs"
@@ -108,12 +109,14 @@ class LJspeechDataset(BaseDataset):
 
             frame_period = (audio.shape[0] / sr * 1000) / mel.shape[0]
             _f0, t = pw.dio(audio, sr, frame_period=frame_period)
-            f0 = pw.stonemask(audio, _f0, t, sr)[:mel.shape[0]].astype(np.float32)
-            
+            f0 = pw.stonemask(audio, _f0, t, sr)[: mel.shape[0]].astype(np.float32)
+
             x = np.arange(f0.shape[0])[f0 != 0]
             y = f0[f0 != 0]
             below, above = f0[f0 != 0][0], f0[f0 != 0][-1]
-            transform = interpolate.interp1d(x, y, bounds_error=False, fill_value = (below, above))
+            transform = interpolate.interp1d(
+                x, y, bounds_error=False, fill_value=(below, above)
+            )
             f0 = transform(np.arange(f0.shape[0]))
             pitch_name = f"ljspeech-pitch-{(i+1):05d}.npy"
             np.save(pitch_dir / pitch_name, f0)
@@ -127,15 +130,15 @@ class LJspeechDataset(BaseDataset):
         mels_dir = self._data_dir / "mels"
         if not mels_dir.exists():
             self._load_mel()
-        
+
         aligments_dir = self._data_dir / "alignments"
         if not aligments_dir.exists():
             self._load_aligments()
-        
+
         pitch_dir = self._data_dir / "pitch"
         if not pitch_dir.exists():
             self._count_pitch()
-        
+
         energy_dir = self._data_dir / "energy"
         if not energy_dir.exists():
             self._count_energy()

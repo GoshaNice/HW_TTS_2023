@@ -61,7 +61,14 @@ class Trainer(BaseTrainer):
         self.log_step = 50
 
         self.train_metrics = MetricTracker(
-            "loss", "mel_loss", "pitch_loss", "energy_loss", "duration_loss", "grad norm", *[m.name for m in self.metrics], writer=self.writer
+            "loss",
+            "mel_loss",
+            "pitch_loss",
+            "energy_loss",
+            "duration_loss",
+            "grad norm",
+            *[m.name for m in self.metrics],
+            writer=self.writer,
         )
         self.evaluation_metrics = MetricTracker(
             *[m.name for m in self.metrics], writer=self.writer
@@ -76,7 +83,15 @@ class Trainer(BaseTrainer):
         """
         Move all necessary tensors to the HPU
         """
-        for tensor_for_gpu in ["src_seq", "src_pos", "mel_target", "duration_target", "pitch_target", "energy_target", "mel_pos"]:
+        for tensor_for_gpu in [
+            "src_seq",
+            "src_pos",
+            "mel_target",
+            "duration_target",
+            "pitch_target",
+            "energy_target",
+            "mel_pos",
+        ]:
             batch[tensor_for_gpu] = batch[tensor_for_gpu].to(device)
         return batch
 
@@ -123,11 +138,9 @@ class Trainer(BaseTrainer):
                         epoch, self._progress(batch_idx), batch["loss"].item()
                     )
                 )
-                self.writer.add_scalar(
-                    "learning rate", self.optimizer.get_last_lr()
-                )
+                self.writer.add_scalar("learning rate", self.optimizer.get_last_lr())
 
-                #self._log_spectrogram(batch["mel_predictions"])
+                # self._log_spectrogram(batch["mel_predictions"])
                 self._log_audio(batch["mel_predictions"])
                 self._log_scalars(self.train_metrics)
                 # we don't want to reset train metrics at the start of every epoch
@@ -155,7 +168,13 @@ class Trainer(BaseTrainer):
             batch["logits"] = outputs
 
         if is_train:
-            batch["loss"], batch["mel_loss"], batch["pitch_loss"], batch["energy_loss"], batch["duration_loss"] = self.criterion(**batch)
+            (
+                batch["loss"],
+                batch["mel_loss"],
+                batch["pitch_loss"],
+                batch["energy_loss"],
+                batch["duration_loss"],
+            ) = self.criterion(**batch)
             metrics.update("loss", batch["loss"].item())
             metrics.update("mel_loss", batch["mel_loss"].item())
             metrics.update("pitch_loss", batch["pitch_loss"].item())
@@ -217,28 +236,28 @@ class Trainer(BaseTrainer):
         melspec = random.choice(spectrogram_batch.cpu())
         mel = melspec.unsqueeze(0).contiguous().transpose(1, 2).to(self.device)
         waveglow.inference.inference(
-            mel, self.waveglow,
-            f"results/s={1}_{1}_waveglow.wav"
+            mel, self.waveglow, f"results/s={1}_{1}_waveglow.wav"
         )
         audio, sr = torchaudio.load(f"results/s={1}_{1}_waveglow.wav")
         self.writer.add_audio("audio", audio, sample_rate=sr)
-    
+
     def _log_test_synthesis(self):
         texts = "A defibrillator is a device that gives a high energy electric shock to the heart of someone who is in cardiac arrest"
-        src_seq = torch.from_numpy(np.array(text_to_sequence(texts, ["english_cleaners"])))
+        src_seq = torch.from_numpy(
+            np.array(text_to_sequence(texts, ["english_cleaners"]))
+        )
 
         src_pos = list()
         src_pos.append(np.arange(1, int(src_seq.size(0)) + 1))
         src_pos = torch.from_numpy(np.array(src_pos)).to(self.device)
         src_seq = src_seq.unsqueeze(0).to(self.device)
-        
+
         self.model.eval()
         output = self.model(src_seq, src_pos)
         melspec = output["mel_predictions"].squeeze()
         mel = melspec.unsqueeze(0).contiguous().transpose(1, 2).to(self.device)
         waveglow.inference.inference(
-            mel, self.waveglow,
-            f"results/s={1}_{1}_waveglow.wav"
+            mel, self.waveglow, f"results/s={1}_{1}_waveglow.wav"
         )
         audio, sr = torchaudio.load(f"results/s={1}_{1}_waveglow.wav")
         self.writer.add_audio("test_audio", audio, sample_rate=sr)

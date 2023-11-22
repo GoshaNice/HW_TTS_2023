@@ -46,7 +46,8 @@ def main(config, out_file):
     vocoder = get_WaveGlow()
     vocoder = vocoder.to(device)
     
-    texts = "A defibrillator is a device that gives a high energy electric shock to the heart of someone who is in cardiac arrest"
+    #texts = "A defibrillator is a device that gives a high energy electric shock to the heart of someone who is in cardiac arrest"
+    texts = "Massachusetts Institute of Technology may be best known for its math, science and engineering education"
     src_seq = torch.from_numpy(np.array(text.text_to_sequence(texts, ["english_cleaners"])))
 
     src_pos = list()
@@ -91,23 +92,16 @@ if __name__ == "__main__":
     args.add_argument(
         "-o",
         "--output",
-        default="output.json",
+        default="output",
         type=str,
-        help="File to write results (.json)",
+        help="Dir to write results",
     )
     args.add_argument(
         "-t",
         "--test-data-folder",
         default=None,
         type=str,
-        help="Path to dataset",
-    )
-    args.add_argument(
-        "-b",
-        "--batch-size",
-        default=20,
-        type=int,
-        help="Test dataset batch size",
+        help="Path to texts.txt to synthesize",
     )
     args.add_argument(
         "-j",

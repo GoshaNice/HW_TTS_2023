@@ -32,7 +32,7 @@ class ScheduledOptim:
 
     def load_state_dict(self, path):
         self._optimizer.load_state_dict(path)
-    
+
     def state_dict(self):
         return self._optimizer.state_dict()
 

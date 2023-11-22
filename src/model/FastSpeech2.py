@@ -5,14 +5,16 @@ from src.base import BaseModel
 from src.model.adaptors import VarianceAdaptor
 from src.model.coders import Encoder, Decoder
 
+
 def get_mask_from_lengths(lengths, max_len=None):
-    if max_len == None:
+    if max_len is None:
         max_len = torch.max(lengths).item()
 
     ids = torch.arange(0, max_len, 1, device=lengths.device)
     mask = (ids < lengths.unsqueeze(1)).bool()
 
     return mask
+
 
 class FastSpeech2(nn.Module):
     """FastSpeech2"""
@@ -33,7 +35,7 @@ class FastSpeech2(nn.Module):
         lengths = torch.max(position, -1)[0]
         mask = ~get_mask_from_lengths(lengths, max_len=mel_max_length)
         mask = mask.unsqueeze(-1).expand(-1, -1, mel_output.size(-1))
-        return mel_output.masked_fill(mask, 0.)
+        return mel_output.masked_fill(mask, 0.0)
 
     def forward(
         self,
@@ -61,7 +63,13 @@ class FastSpeech2(nn.Module):
                 pitch_control=pitch_control,
                 energy_control=energy_control,
             )
-            x, log_pitch_prediction, log_energy_prediction, log_duration_prediction, _ = output
+            (
+                x,
+                log_pitch_prediction,
+                log_energy_prediction,
+                log_duration_prediction,
+                _,
+            ) = output
             output = self.decoder(x, mel_pos)
             output = self.mask_tensor(output, mel_pos, mel_max_length)
             output = self.mel_linear(output)
@@ -72,11 +80,19 @@ class FastSpeech2(nn.Module):
                 pitch_control=pitch_control,
                 energy_control=energy_control,
             )
-            x, log_pitch_prediction, log_energy_prediction, log_duration_prediction, mel_pos = output
+            (
+                x,
+                log_pitch_prediction,
+                log_energy_prediction,
+                log_duration_prediction,
+                mel_pos,
+            ) = output
             output = self.decoder(x, mel_pos)
             output = self.mel_linear(output)
 
-        return {"mel_predictions": output, 
-                "log_duration_predictions": log_duration_prediction,
-                "log_pitch_predictions": log_pitch_prediction,
-                "log_energy_predictions": log_energy_prediction}
+        return {
+            "mel_predictions": output,
+            "log_duration_predictions": log_duration_prediction,
+            "log_pitch_predictions": log_pitch_prediction,
+            "log_energy_predictions": log_energy_prediction,
+        }

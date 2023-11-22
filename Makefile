@@ -27,3 +27,6 @@ test_model:
 
 train:
 	poetry run python train.py -c src/ss_config.json
+
+download_waveglow:
+	poetry run gdown https://drive.google.com/u/0/uc?id=1WsibBTsuRg_SF2Z6L6NFRTT-NjEy1oTx

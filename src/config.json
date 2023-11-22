@@ -46,8 +46,11 @@
             "phoneme_embed_dim": 256,
             "variance_adaptor": {
                 "input_channels": 256,
+                "output_channels": 256,
                 "kernel_size": 3,
                 "dropout": 0.1,
+                "n_bins": 256,
+                "encoder_hidden": 256,
                 "pitch_min": 60,
                 "pitch_max": 880,
                 "energy_min": 15,
