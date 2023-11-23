@@ -1,7 +1,7 @@
 # TTS HW3
 #### Implemented by: Pistsov Georgiy 202
 
-You can find report here: [wandb report](https://wandb.ai/goshanice/ss_project/reports/-DLA-TTS-Homework--Vmlldzo1OTQ4MTQz?accessToken=724noxivesjdk0w1rkq4ad9e9pbeby2hsytbnerniy4277j3lpfkkal3asjhkkt7)
+You can find report here: [wandb report](https://wandb.ai/goshanice/tts_project/reports/-DLA-TTS-Homework--Vmlldzo2MDUxNjU4?accessToken=ll13eq4q0o9hix06hoyhqdiyk34v0uhze860lh7s12yj464rlouzaszgn4z2mm5n)
 
 ## Installation guide
 
