@@ -7,17 +7,13 @@ import torch
 from tqdm import tqdm
 
 import src.model as module_model
-from src.trainer import Trainer
 from src.utils import ROOT_PATH
 from src.utils.object_loading import get_dataloaders
 from src.utils.parse_config import ConfigParser
-import pyloudnorm as pyln
-import torch.nn.functional as F
 import numpy as np
 from src import text
 from waveglow.utils import get_WaveGlow
 import waveglow
-import torchaudio
 
 DEFAULT_CHECKPOINT_PATH = ROOT_PATH / "default_test_model" / "checkpoint.pth"
 
@@ -49,9 +45,8 @@ def main(config, input_file, out_folder):
     with open(str(input_file)) as f:
         my_lines = f.readlines()
 
-    for index, texts in enumerate(my_lines):
+    for index, texts in tqdm(enumerate(my_lines)):
         texts = "{" + texts.strip() + "}"
-        print(texts)
         src_seq = torch.from_numpy(
             np.array(text.text_to_sequence(texts, ["english_cleaners"]))
         )
@@ -77,8 +72,9 @@ def main(config, input_file, out_folder):
                     out_path = (
                         out_folder
                         / f"{index}"
-                        / f"d={duration_control}_p={pitch_control}_e={energy_control}.wav"
                     )
+                    out_path.mkdir(exist_ok=True, parents=True)
+                    out_path = out_path / f"d={duration_control}_p={pitch_control}_e={energy_control}.wav"
                     waveglow.inference.inference(mel, vocoder, out_path)
 
 

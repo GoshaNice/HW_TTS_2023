@@ -1,4 +1,4 @@
-# TTS HW1
+# TTS HW3
 #### Implemented by: Pistsov Georgiy 202
 
 You can find report here: [wandb report](https://wandb.ai/goshanice/ss_project/reports/-DLA-TTS-Homework--Vmlldzo1OTQ4MTQz?accessToken=724noxivesjdk0w1rkq4ad9e9pbeby2hsytbnerniy4277j3lpfkkal3asjhkkt7)
@@ -43,11 +43,13 @@ Config for training you can find in src/config.json
 
 ### On test-clean:
 
+The phonemes to synthesize should be in "test_data_folder/input.txt"
+
 ```shell
 make synthesize
 ```
 
-The file "output_test_clean.json" with results will be in the root on repository
+The results will be in "results/"
 
 
 ## Run any other python script:

@@ -20,10 +20,10 @@ format:
 	poetry run black $(CODE)
 
 download_checkpoint:
-	wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=FILEID' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1yhJX9IyXZ1L1SbFbhW0gwpipghsJwI9w" -O default_test_model/model_best.pth && rm -rf /tmp/cookies.txt
+	wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=FILEID' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1s-WY_3pfJ576BAV5yCgz1KF8VDGBEAPK" -O default_test_model/model_best.pth && rm -rf /tmp/cookies.txt
 
 synthesize:
-	poetry run python sinthesize.py -r default_test_model/model_best.pth -i test_data_folder/input.txt
+	poetry run python synthesize.py -r default_test_model/model_best.pth -i test_data_folder/input.txt
 
 train:
 	poetry run python train.py -c src/config.json

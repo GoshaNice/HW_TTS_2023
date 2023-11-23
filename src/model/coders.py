@@ -134,7 +134,7 @@ class Decoder(nn.Module):
         n_layers = model_config["encoder_n_layer"]
 
         self.src_word_emb = nn.Embedding(
-            model_config["vocab_size"],
+            n_position,
             model_config["encoder_dim"],
             padding_idx=model_config["PAD"],
         )

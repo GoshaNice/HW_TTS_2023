@@ -1,5 +1,5 @@
 {
-    "name": "FastSpeech2+Hope+MFA",
+    "name": "Test_FastSpeech2+Hope+MFA",
     "n_gpu": 1,
     "preprocessing": {
         "sr": 22050,
@@ -20,8 +20,8 @@
         "type": "FastSpeech2",
         "args": {
             "model_config": {
-                "vocab_size": 1000,
-                "max_seq_len": 3000,
+                "vocab_size": 300,
+                "max_seq_len": 6000,
                 "encoder_dim": 256,
                 "encoder_n_layer": 4,
                 "encoder_head": 2,
@@ -106,7 +106,8 @@
                 0.9,
                 0.98
             ],
-            "eps": 1e-09
+            "eps": 1e-09,
+            "d_model": 2560
         }
     },
     "loss": {
