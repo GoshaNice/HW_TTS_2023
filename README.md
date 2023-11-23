@@ -1,7 +1,7 @@
-# TTS HW1
+# TTS HW3
 #### Implemented by: Pistsov Georgiy 202
 
-You can find report here: [wandb report](https://wandb.ai/goshanice/ss_project/reports/-DLA-TTS-Homework--Vmlldzo1OTQ4MTQz?accessToken=724noxivesjdk0w1rkq4ad9e9pbeby2hsytbnerniy4277j3lpfkkal3asjhkkt7)
+You can find report here: [wandb report](https://wandb.ai/goshanice/tts_project/reports/-DLA-TTS-Homework--Vmlldzo2MDUxNjU4?accessToken=ll13eq4q0o9hix06hoyhqdiyk34v0uhze860lh7s12yj464rlouzaszgn4z2mm5n)
 
 ## Installation guide
 
@@ -18,6 +18,11 @@ Then you run:
 make install
 ```
 
+## Download waveglow:
+
+```shell
+make download_waveglow
+```
 
 ## Download checkpoint:
 
@@ -34,15 +39,15 @@ make train
 Config for training you can find in src/config.json
 
 
-## Test model:
+## Synthesize something:
 
-### On test-clean:
+The phonemes to synthesize should be in "test_data_folder/input.txt"
 
 ```shell
-make test_model
+make synthesize
 ```
 
-The file "output_test_clean.json" with results will be in the root on repository
+The results will be in "results/"
 
 
 ## Run any other python script:
@@ -53,27 +58,20 @@ For example:
 Instead of:
 
 ```shell
-python test.py -r default_test_model/model_best.pth
+python train.py -r default_test_model/model_best.pth
 ```
 
 You can use:
 
 ```shell
-poetry run python test.py -r default_test_model/model_best.pth
+poetry run python train.py -r default_test_model/model_best.pth
 ```
 
 ## How to train my model
 
 ```shell
-poetry run python test.py -c src/configs/config_SpexPlusChangeMixture.json
+poetry run python train.py -c src/config.json
 ```
-
-Then you will need to resume from latest checkpoint
-
-```shell
-poetry run python test.py -c src/configs/config_SpexPlusChangeMixturePost.json -r PATH/TO/CHECKPOINT
-```
-
 
 ## Credits
 

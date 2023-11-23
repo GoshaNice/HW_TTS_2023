@@ -1,0 +1,141 @@
+{
+    "name": "FastSpeech2+Hope",
+    "n_gpu": 1,
+    "preprocessing": {
+        "sr": 22050,
+        "spectrogram": {
+            "type": "MelSpectrogram",
+            "args": {
+                "nfft": 1024,
+                "hop_size": 256
+            }
+        },
+        "log_spec": false
+    },
+    "augmentations": {
+        "wave": [],
+        "spectrogram": []
+    },
+    "arch": {
+        "type": "FastSpeech2",
+        "args": {
+            "model_config": {
+                "vocab_size": 1000,
+                "max_seq_len": 3000,
+                "encoder_dim": 256,
+                "encoder_n_layer": 4,
+                "encoder_head": 2,
+                "encoder_conv1d_filter_size": 1024,
+                "decoder_dim": 256,
+                "decoder_n_layer": 4,
+                "decoder_head": 2,
+                "decoder_conv1d_filter_size": 1024,
+                "fft_conv1d_kernel": [
+                    9,
+                    1
+                ],
+                "fft_conv1d_padding": [
+                    4,
+                    0
+                ],
+                "duration_predictor_filter_size": 256,
+                "duration_predictor_kernel_size": 3,
+                "dropout": 0.1,
+                "PAD": 0,
+                "UNK": 1,
+                "BOS": 2,
+                "EOS": 3,
+                "PAD_WORD": "<blank>",
+                "UNK_WORD": "<unk>",
+                "BOS_WORD": "<s>",
+                "EOS_WORD": "</s>",
+                "phoneme_embed_dim": 256,
+                "variance_adaptor": {
+                    "input_channels": 256,
+                    "output_channels": 256,
+                    "kernel_size": 3,
+                    "dropout": 0.1,
+                    "n_bins": 256,
+                    "encoder_hidden": 256,
+                    "pitch_min": 60,
+                    "pitch_max": 880,
+                    "energy_min": 15,
+                    "energy_max": 95
+                },
+                "num_mels": 80
+            }
+        }
+    },
+    "data": {
+        "train": {
+            "batch_size": 48,
+            "num_workers": 5,
+            "datasets": [
+                {
+                    "type": "LJspeechDataset",
+                    "args": {
+                        "part": "train",
+                        "max_audio_length": 20.0,
+                        "max_text_length": 200,
+                        "batch_expand_size": 48
+                    }
+                }
+            ]
+        },
+        "val": {
+            "batch_size": 32,
+            "num_workers": 5,
+            "datasets": [
+                {
+                    "type": "LJspeechDataset",
+                    "args": {
+                        "part": "test",
+                        "max_audio_length": 20.0,
+                        "max_text_length": 200,
+                        "limit": 640
+                    }
+                }
+            ]
+        }
+    },
+    "optimizer": {
+        "type": "ScheduledOptim",
+        "args": {
+            "n_warmup_steps": 4000,
+            "betas": [
+                0.9,
+                0.98
+            ],
+            "eps": 1e-09
+        }
+    },
+    "loss": {
+        "type": "FastSpeech2Loss",
+        "args": {}
+    },
+    "metrics": [
+        {}
+    ],
+    "lr_scheduler": {
+        "type": "OneCycleLR",
+        "args": {
+            "steps_per_epoch": 100,
+            "epochs": 50,
+            "anneal_strategy": "cos",
+            "max_lr": 0.01,
+            "pct_start": 0.2
+        }
+    },
+    "trainer": {
+        "epochs": 200,
+        "save_dir": "saved/",
+        "save_period": 10,
+        "verbosity": 2,
+        "monitor": "min train_loss",
+        "early_stop": 160,
+        "visualize": "wandb",
+        "wandb_project": "tts_project",
+        "len_epoch": 1000,
+        "grad_norm_clip": 10
+    }
+}
